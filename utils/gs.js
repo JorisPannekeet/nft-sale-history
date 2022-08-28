@@ -31,7 +31,7 @@ const getNftHistory = (loopringId, rl) => {
 			const worksheet = workbook.addWorksheet('Sheet 1');
 			const style = workbook.createStyle({
 				font: {
-					color: '#FF0800',
+					color: '#000',
 					size: 12
 				}
 			});
