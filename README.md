@@ -8,3 +8,7 @@ Get the sale history of an NFT
 4. The prompt will ask you for the Token/NFT id and the contract address, you can find these in the url of your NFT
 https://nft.gamestop.com/token/[CONTRACT_ADDRESS]/[TOKEN_ID]
 5. The file will be created as an .xlsx in the folder
+
+
+## Donate
+Support me updating my projects! lvl5mage.loopring.eth
