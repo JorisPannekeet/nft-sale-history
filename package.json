@@ -21,7 +21,7 @@
 		"utils"
 	],
 	"scripts": {
-		"start": "node index.js",
+		"start": "npm i && node index.js",
 		"format": "prettier --write \"./**/*.{js,json}\""
 	},
 	"dependencies": {
