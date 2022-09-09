@@ -1,6 +1,6 @@
 const axios = require('axios').default;
 const { ethers } = require('ethers');
-const excel = require('excel4node');
+const XLSX = require('xlsx');
 
 const getNftData = (id, contract, rl) => {
 	console.log('getting nft info...');
@@ -9,63 +9,49 @@ const getNftData = (id, contract, rl) => {
 			`https://api.nft.gamestop.com/nft-svc-marketplace/getNft?tokenIdAndContractAddress=${id}_${contract}`
 		)
 		// .get(
-		// 	`https://api.nft.gamestop.com/nft-svc-marketplace/getNft?tokenIdAndContractAddress=0x9fa35b10fd77628db18adf4132dc16c14f55d7f6d464e3fb4233f677fbd21f37_0x50f7c99091522898b3e0b8a5b4bd2d48385fe99e`
+		// 	`https://api.nft.gamestop.com/nft-svc-marketplace/getNft?tokenIdAndContractAddress=0x4bb68fec13f1ed6fd6f8f9bf0bf29d7c8af4a8c767676787d814712329e2e972_0x31585bc66347e5d1e8edf5af2a7bb864e9c04055`
 		// )
 		.then(response => {
 			getNftHistory(response.data.loopringNftInfo.nftData[0], rl);
 		});
 };
+
 const getNftHistory = (loopringId, rl) => {
 	console.log(`getting trade history with id ${loopringId} ...`);
 	axios
 		.get(
 			`https://api.nft.gamestop.com/nft-svc-marketplace/history?nftData=${loopringId}`
 		)
-		.then(response => {
+		.then(async response => {
 			const data = response.data;
 			const filteredData = data.filter(
 				sale => sale.transaction.txType == 'SpotTrade'
 			);
-			const workbook = new excel.Workbook();
 
-			const worksheet = workbook.addWorksheet('Sheet 1');
-			const style = workbook.createStyle({
-				font: {
-					color: '#000000',
-					size: 12
+			const rows = filteredData.map(row => ({
+				blockid: row.blockId,
+				transactionId: row.transactionId,
+				ethAmount: ethers.utils.formatEther(
+					row.transaction.orderA.amountS
+				),
+				nftAmount: row.transaction.orderA.amountB
+			}));
+
+			const worksheet = XLSX.utils.json_to_sheet(rows);
+			const workbook = XLSX.utils.book_new();
+			XLSX.utils.book_append_sheet(workbook, worksheet, 'Dates');
+
+			/* fix headers */
+			XLSX.utils.sheet_add_aoa(
+				worksheet,
+				[['Block Id', 'Transaction Id', 'ETH Amount', 'NFT amount']],
+				{
+					origin: 'A1'
 				}
-			});
+			);
 
-			filteredData.map((sale, index) => {
-				const ethAmount = ethers.utils.formatEther(
-					sale.transaction.orderA.amountS
-				);
-				const saleAmount = sale.transaction.orderA.amountB;
-
-				//HEADERS
-				worksheet.cell(1, 1).string('Block id').style(style);
-				worksheet.cell(1, 2).string('Transaction id').style(style);
-				worksheet.cell(1, 3).string('ETH amount').style(style);
-				worksheet.cell(1, 4).string('NFT amount').style(style);
-				//DATA
-				worksheet
-					.cell(index + 2, 1)
-					.number(parseFloat(sale.blockId))
-					.style(style);
-				worksheet
-					.cell(index + 2, 2)
-					.number(parseFloat(sale.transactionId))
-					.style(style);
-				worksheet
-					.cell(index + 2, 3)
-					.string(ethAmount)
-					.style(style);
-				worksheet
-					.cell(index + 2, 4)
-					.number(parseFloat(saleAmount))
-					.style(style);
-			});
-			workbook.write('result.xlsx');
+			/* create an XLSX file and try to save to Presidents.xlsx */
+			XLSX.writeFile(workbook, 'result.xlsx');
 			console.log('DONE! written to result.xlsx');
 		})
 		.then(() => rl.close());
